@@ -28,21 +28,23 @@ def validate(image_path, image, largest_contour):
             return key != 27
 
 
-def get_largest_contour(image):
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+def get_largest_contour(base_image):
+    image = cv2.cvtColor(base_image, cv2.COLOR_BGR2GRAY)
 
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    image = cv2.GaussianBlur(image, (5, 5), 0)
+
 
     adaptive_thresh = cv2.adaptiveThreshold(
-        blurred,
+        image,
         maxValue=255,
         adaptiveMethod=cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
         thresholdType=cv2.THRESH_BINARY,
         blockSize=19,  # Size of the pixel neighborhood
-        C=2  # Constant subtracted from the mean
+        C=3  # Constant subtracted from the mean
     )
 
     edges = cv2.Canny(adaptive_thresh, threshold1=50, threshold2=150)
+
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
     closed_edges = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
 
@@ -50,7 +52,7 @@ def get_largest_contour(image):
 
     largest = max(contours, key=cv2.contourArea)
 
-    mask = cv2.drawContours(np.zeros_like(image[:, :, 0]), [largest], -1, 255, thickness=cv2.FILLED)
+    mask = cv2.drawContours(np.zeros_like(base_image[:, :, 0]), [largest], -1, 255, thickness=cv2.FILLED)
     edges = cv2.Canny(mask, threshold1=50, threshold2=150)
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
     closed_edges = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel, iterations=2)
@@ -93,6 +95,7 @@ def get_files():
 
 
 def format_csv(image_path, pixels, valid):
+    return ""
     match = re.search(r"(\w{1,2})-(20|60|100)-(N?D)-(R[123])[\\/](\d+)(M|F)(R?)\.jpg", image_path)
     data = [match[1], match[2], match[3], match[4], match[6], match[5] + match[6], match[7] or "L", pixels, pixels * 0,
             valid]
